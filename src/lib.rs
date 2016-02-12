@@ -60,7 +60,8 @@ macro_rules! ident_map {
 #[doc(hidden)]
 macro_rules! codelen {
     () => { 0 };
-    ( $($c:expr),+ ) => { [$($c),+].len() };
+    ( $one:expr ) => { 1 };
+    ( $first:expr, $($rest:expr),+ ) => { 1 + codelen!($($rest),+) };
 }
 
 /// Replace elements of "arrays" of expressions with sorted replacements by
@@ -1152,5 +1153,23 @@ fn test_pcrel() {
         0x90, 0xfe,
         0x90, 0x00,
         0x90, (-6i8) as u8,
+    ]);
+}
+
+/// We should assemble to true constant expressions that can be stored in `static`s or `const`s.
+#[test]
+fn const_expr() {
+    const MCODE: &'static [u8] = &assemble6502!(
+        ldx #0
+        txa
+
+    lbl:
+        bcs lbl
+    );
+
+    assert_eq!(MCODE, [
+        0xA2, 0x00,
+        0x8A,
+        0xB0, (-2i8) as u8,
     ]);
 }
