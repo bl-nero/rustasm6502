@@ -54,8 +54,7 @@ macro_rules! ident_map {
     };
 }
 
-/// Given an array of machine code (Bytes), returns its length.
-/// FIXME Don't go through an array
+/// Returns the number of comma-separated expressions passed to it
 #[macro_export]
 #[doc(hidden)]
 macro_rules! codelen {
@@ -106,7 +105,7 @@ macro_rules! lockstep_replace {
             )*
         )
     };
-    ( [ $($result:expr),* ], [ $src1:expr, $($src:expr,)* ], $( [ $pos1:expr, $($pos:expr,)* ], [ $($rep:expr,)* ], )+ ) => {{
+    ( [ $($result:expr),* ], [ $src1:expr, $($src:expr,)* ], $( [ $pos1:expr, $($pos:expr,)* ], [ $($rep:expr,)* ], )+ ) => {
         // Seek to next replacement position (simultaneously for all
         // replacements)
         lockstep_replace!(
@@ -117,7 +116,7 @@ macro_rules! lockstep_replace {
                 [ $($rep,)* ],
             )+
         )
-    }};
+    };
 }
 
 /// Performs relocation of machine code based on given labels and relocations.
@@ -129,9 +128,9 @@ macro_rules! lockstep_replace {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! reloc {
-    ( [ $( [ $($pos:expr),* ], [ $($rep:expr),* ] ),* ], $lblmap:ident, [ $($mcode:expr),* ], [/* empty relocation list */] ) => {{
+    ( [ $( [ $($pos:expr),* ], [ $($rep:expr),* ] ),* ], $lblmap:ident, [ $($mcode:expr),* ], [/* empty relocation list */] ) => {
         lockstep_replace!([], [ $($mcode,)* ], $( [ $($pos,)* ], [ $($rep,)* ], )*)
-    }};
+    };
     ( [ $( [ $($pos:expr),* ], [ $($rep:expr),* ] ),* ], $lblmap:ident, [ $($mcode:expr),* ], [ { $lbl:ident as ABS16 @ [$($lockstepmcpos:expr),*] } $(,$reloc:tt)* ] ) => {
         // Replace 2 Bytes with the absolute address
         // Relocation position is given as "lock-step MC pos", an expression
@@ -1036,14 +1035,14 @@ macro_rules! asm_ {
     // Check for labels
     ( [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
         $label:ident :
-    $($rest:tt)* ) => {{
+    $($rest:tt)* ) => {
         asm_!(
             [ $($mcode),* ],
             [ $($lbl => $lblval,)* $label => codelen!($($mcode),*) ],
             [ $($reloc),* ],
             $($rest)*
         )
-    }};
+    };
 }
 
 /// Entry point for the macro-based MOS6502 assembler.
