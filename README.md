@@ -4,6 +4,8 @@
 
 (no but seriously, you want to use a *macro* to assemble stuff?)
 
+[Documentation](http://jonas-schievink.github.io/rustasm6502/rustasm6502/)
+
 ## Implemented Features
 
 * Full compile-time assembly to executable machine code
