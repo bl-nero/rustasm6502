@@ -41,7 +41,7 @@
 
 /// A compile-time map from identifiers to arbitrary (heterogeneous) expressions
 #[macro_export]
-#[doc = "hidden"]
+#[doc(hidden)]
 macro_rules! ident_map {
     ( $name:ident = { $($key:ident => $e:expr),* $(,)* } ) => {
         macro_rules! $name {
@@ -57,7 +57,7 @@ macro_rules! ident_map {
 /// Given an array of machine code (Bytes), returns its length.
 /// FIXME Don't go through an array
 #[macro_export]
-#[doc = "hidden"]
+#[doc(hidden)]
 macro_rules! codelen {
     () => { 0 };
     ( $($c:expr),+ ) => { [$($c),+].len() };
@@ -70,7 +70,7 @@ macro_rules! codelen {
 /// Expands to the first array with replacements applied. The length doesn't
 /// change.
 #[macro_export]
-#[doc = "hidden"]
+#[doc(hidden)]
 macro_rules! lockstep_replace {
     ( [ $($result:expr),* ], [], ) => {
         // `src` is empty, no relocations. We're done!
@@ -126,7 +126,7 @@ macro_rules! lockstep_replace {
 /// Relocation formats:
 /// { $label as ABS16 @ [$lockstepmcpos] }
 #[macro_export]
-#[doc = "hidden"]
+#[doc(hidden)]
 macro_rules! reloc {
     ( [ $( [ $($pos:expr),* ], [ $($rep:expr),* ] ),* ], $lblmap:ident, [ $($mcode:expr),* ], [/* empty relocation list */] ) => {{
         lockstep_replace!([], [ $($mcode,)* ], $( [ $($pos,)* ], [ $($rep,)* ], )*)
@@ -152,7 +152,7 @@ macro_rules! reloc {
 }
 
 #[macro_export]
-#[doc = "hidden"]
+#[doc(hidden)]
 macro_rules! asm_ {
     ( [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
         // EOF
