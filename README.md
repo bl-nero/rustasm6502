@@ -9,5 +9,6 @@
 ## Implemented Features
 
 * Full compile-time assembly to executable machine code
+ * Machine code is emitted as a constant `u8` array (you can store it in a `static` or `const`)
 * Label support (`loop: jmp loop`, `beq start`)
 * Supports all official 6502 opcodes and addressing modes
