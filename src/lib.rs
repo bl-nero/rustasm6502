@@ -39,6 +39,9 @@
 //! }
 //! ```
 
+// needed for some tests
+#![recursion_limit = "512"]
+
 /// A compile-time map from identifiers to arbitrary (heterogeneous) expressions
 #[macro_export]
 #[doc(hidden)]
@@ -48,7 +51,8 @@ macro_rules! ident_map {
             $(
                 ( $key ) => { $e };
             )*
-            // Empty invocation expands to nothing. Needed when the map is empty.
+            // Empty invocation expands to nothing. Needed when the map is empty (otherwise the
+            // generated macro doesn't compile).
             () => {};
         }
     };
@@ -124,7 +128,11 @@ macro_rules! lockstep_replace {
 /// code.
 ///
 /// Relocation formats:
-/// { $label as ABS16 @ [$lockstepmcpos] }
+/// * `{ $label as ABS16 @ [$lockstepmcpos] }`: Replaces 2 bytes in the machine code with the
+///   absolute address of a label (possibly offsetting by a code start address)
+/// * `{ $label as PCREL @ [$lockstepmcpos] }`: Replaces 1 byte in the machine code with a signed
+///   8-bit offset from the machine code position after the relocated byte to the label (PC-relative
+///   addressing)
 #[macro_export]
 #[doc(hidden)]
 macro_rules! reloc {
@@ -141,16 +149,18 @@ macro_rules! reloc {
             [ $($lockstepmcpos),* ], [ ($lblmap!($lbl) + $start) as u8, (($lblmap!($lbl) + $start) >> 8) as u8 ] ],
             $lblmap, [ $($mcode),* ], [ $($reloc),* ])
     };
-    ( { $($attr:tt)* }  [ $( [ $($pos:expr),* ], [ $($rep:expr),* ] ),* ], $lblmap:ident, [ $($mcode:expr),* ], [ { $lbl:ident as PCREL @ [$($lockstepmcpos:expr),*] } $(,$reloc:tt)* ] ) => {
+    ( { $($attr:tt)* }  [ $( [ $($pos:expr),* ], [ $($rep:expr),* ] ),* ], $lblmap:ident, [ $($mcode:expr),* ], [ { $lbl:ident as PCREL @ [$($lockstepmcpos:expr),*] } $(,$reloc:tt)* ] ) => {{
         // Replace 1 Byte with the PC relative address
         // PC is the program counter *after* the relocated offset (the length of the
         // `$lockstepmcpos` array + 1), so we need to subtract 1 additional byte.
+        #[allow(dead_code)]
+        static OVERFLOW_DETECTION: u16 = $lblmap!($lbl) as u16 + 127 - codelen!($($lockstepmcpos),*) as u16;
         reloc!(
             { $($attr)* }
             [ $( [ $($pos),* ], [ $($rep),* ] ,)*
             [ $($lockstepmcpos),* ], [ ( $lblmap!($lbl) as i32 - codelen!($($lockstepmcpos),*) as i32 - 1 ) as u8 ] ],
             $lblmap, [ $($mcode),* ], [ $($reloc),* ])
-    };
+    }};
 }
 
 #[macro_export]
@@ -1206,4 +1216,23 @@ fn code_start_attr() {
         0xA9, 0x00,
         0x4C, 0x03, 0x80,
     ]);
+}
+
+#[test]
+fn overflow() {
+    // XXX This takes a *really* long time to expand
+    assemble6502!(
+    start:
+        txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa // 16 Bytes
+        txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa
+        txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa
+        txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa // 64
+        txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa
+        txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa
+        txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa txa
+        txa txa txa txa txa txa txa txa txa txa txa txa txa txa         // 126
+
+        // This is the farthest possible backwards jump
+        bcs start                                                       // 128 Bytes
+    );
 }
