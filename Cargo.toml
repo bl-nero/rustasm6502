@@ -1,7 +1,7 @@
 [package]
 name = "rustasm6502"
 version = "0.1.1"
-authors = ["Jonas Schievink <jonas@schievink.net>"]
+authors = ["Jonas Schievink <jonasschievink@gmail.com>"]
 description = "A 6502 assembler in macro_rules!"
 license = "Apache-2.0/MIT"
 repository = "https://github.com/jonas-schievink/rustasm6502"
