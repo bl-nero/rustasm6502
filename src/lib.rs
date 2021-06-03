@@ -1,7 +1,12 @@
 //! A MOS6502 assembler implemented as a macro.
 //!
-//! **Note**: Due to limitations in Rust macros, syntax for absolute addressing modes requires the
-//! use of `abs` after the mnemonic (eg. `lda abs 0xffff`).
+//! **Note**: Due to limitations in Rust macros, there are two deviations from a
+//! typical 6502 assembly syntax:
+//! 
+//! * For absolute addressing mode, you need to use `abs` after the mnemonic
+//! (eg. `lda abs 0xffff`).
+//! * For accumulator addressing mode, you need to use `a` after the mnemonic
+//! (eg. `lsr a`).
 //!
 //! # Example
 //!
@@ -19,6 +24,7 @@
 //!     main:
 //!         adc 0xff        // Zero-Page
 //!         adc abs 0x1234  // Absolute address 0x1234
+//!         ror a           // Rotate the accumulator
 //!         beq main
 //!     end:
 //!         jmp end
@@ -32,9 +38,10 @@
 //!
 //!         0x65, 0xff,
 //!         0x6D, 0x34, 0x12,   // Little-endian
-//!         0xF0, (-7i8) as u8,
+//!         0x6A,
+//!         0xF0, (-8i8) as u8,
 //!
-//!         0x4C, 14, 0,
+//!         0x4C, 15, 0,
 //!     ]);
 //! }
 //! ```
@@ -260,6 +267,11 @@ macro_rules! asm_ {
 
     // ASL
     ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
+        asl a     // Accumulator
+    $($rest:tt)* ) => {
+        asm_!({ $($attr)* } [ $($mcode,)* 0x0A ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
+    };
+    ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
         asl $zp:tt, x
     $($rest:tt)* ) => {
         asm_!({ $($attr)* } [ $($mcode,)* 0x16, $zp ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
@@ -278,11 +290,6 @@ macro_rules! asm_ {
         asl $zp:tt
     $($rest:tt)* ) => {
         asm_!({ $($attr)* } [ $($mcode,)* 0x06, $zp ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
-    };
-    ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
-        asl     // Accumulator
-    $($rest:tt)* ) => {
-        asm_!({ $($attr)* } [ $($mcode,)* 0x0A ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
     };
 
     // BCC
@@ -695,6 +702,11 @@ macro_rules! asm_ {
 
     // LSR - Logical Shift Right
     ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
+        lsr a     // Accumulator
+    $($rest:tt)* ) => {
+        asm_!({ $($attr)* } [ $($mcode,)* 0x4A ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
+    };
+    ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
         lsr $zp:tt, x
     $($rest:tt)* ) => {
         asm_!({ $($attr)* } [ $($mcode,)* 0x56, $zp ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
@@ -713,11 +725,6 @@ macro_rules! asm_ {
         lsr $zp:tt
     $($rest:tt)* ) => {
         asm_!({ $($attr)* } [ $($mcode,)* 0x46, $zp ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
-    };
-    ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
-        lsr     // Accumulator
-    $($rest:tt)* ) => {
-        asm_!({ $($attr)* } [ $($mcode,)* 0x4A ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
     };
 
     // NOP
@@ -796,6 +803,11 @@ macro_rules! asm_ {
 
     // ROL - Rotate Left
     ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
+        rol a     // Accumulator
+    $($rest:tt)* ) => {
+        asm_!({ $($attr)* } [ $($mcode,)* 0x2A ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
+    };
+    ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
         rol $zp:tt, x
     $($rest:tt)* ) => {
         asm_!({ $($attr)* } [ $($mcode,)* 0x36, $zp ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
@@ -815,13 +827,13 @@ macro_rules! asm_ {
     $($rest:tt)* ) => {
         asm_!({ $($attr)* } [ $($mcode,)* 0x26, $zp ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
     };
-    ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
-        rol     // Accumulator
-    $($rest:tt)* ) => {
-        asm_!({ $($attr)* } [ $($mcode,)* 0x2A ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
-    };
 
     // ROR - Rotate Right
+    ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
+        ror a     // Accumulator
+    $($rest:tt)* ) => {
+        asm_!({ $($attr)* } [ $($mcode,)* 0x6A ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
+    };
     ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
         ror $zp:tt, x
     $($rest:tt)* ) => {
@@ -841,11 +853,6 @@ macro_rules! asm_ {
         ror $zp:tt
     $($rest:tt)* ) => {
         asm_!({ $($attr)* } [ $($mcode,)* 0x66, $zp ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
-    };
-    ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
-        ror     // Accumulator
-    $($rest:tt)* ) => {
-        asm_!({ $($attr)* } [ $($mcode,)* 0x6A ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
     };
 
     // RTI
@@ -1206,4 +1213,15 @@ fn code_start_attr() {
         0xA9, 0x00,
         0x4C, 0x03, 0x80,
     ]);
+}
+
+#[test]
+fn accumulator_addressing() {
+    let mcode = assemble6502!(
+        asl a
+        lsr a
+        rol a
+        ror a
+    );
+    assert_eq!(mcode, [ 0x0A, 0x4A, 0x2A, 0x6A ]);
 }
