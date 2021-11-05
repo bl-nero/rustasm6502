@@ -970,7 +970,7 @@ macro_rules! asm_ {
     ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
         stx $zp:tt, y
     $($rest:tt)* ) => {
-        asm_!({ $($attr)* } [ $($mcode,)* 0x86, $zp ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
+        asm_!({ $($attr)* } [ $($mcode,)* 0x96, $zp ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
     };
     ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
         stx abs $abs:tt
