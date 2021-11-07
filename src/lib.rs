@@ -593,7 +593,8 @@ macro_rules! asm_ {
     ( { $($attr:tt)* } [ $($mcode:expr),* ], [ $($lbl:ident => $lblval:expr),* ], [ $($reloc:tt),* ],
         jmp ($ind:tt)
     $($rest:tt)* ) => {
-        asm_!({ $($attr)* } [ $($mcode,)* 0x6C, $ind ], [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
+        asm_!({ $($attr)* } [ $($mcode,)* 0x6C, ($ind as u16) as u8, (($ind as u16) >> 8) as u8 ],
+            [ $($lbl => $lblval),* ], [ $($reloc),* ], $($rest)*)
     };
 
     // JSR
@@ -1099,6 +1100,14 @@ fn simple_jmp() {
         start: jmp start
     );
     assert_eq!(mcode, [ 0x4C, 0x00, 0x00 ]);
+}
+
+#[test]
+fn indirect_jmp() {
+    let mcode = assemble6502!(
+        jmp (0x5432)
+    );
+    assert_eq!(mcode, [ 0x6C, 0x32, 0x54 ]);
 }
 
 /// Has to work without any relocations (label references)
